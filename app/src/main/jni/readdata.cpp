@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <android/trace.h>
+#include <sys/stat.h>
 
 #define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG, "encapp", __VA_ARGS__)
 
@@ -38,11 +39,35 @@ JNIEXPORT void JNICALL closeFile() {
     }
 }
 
+static bool GetAvailable(FILE *filePtr, size_t* size)  {
+    if (nullptr == size || !filePtr) {
+        return false;
+    }
+
+    struct stat fileStats;
+    if (fstat(fileno(filePtr), &fileStats) != 0) {
+        return false;
+    }
+    if (size) {
+        *size = fileStats.st_size;
+    }
+
+    long result = ftell(filePtr);
+    if (result < 0) {
+        return false;
+    }
+    if (size) {
+        *size -= result;
+    }
+    return true;
+}
+
 JNIEXPORT jint JNICALL fillBuffer(JNIEnv *env, jobject obj_this, jobject outputData, jint size) {
     (void) obj_this;
     size_t read = 0;
 
     uint8_t *outputBuffer = 0;
+    size_t bytesLeft = 0;
 
     outputBuffer = (uint8_t *) env->GetDirectBufferAddress(outputData);
 
@@ -51,6 +76,10 @@ JNIEXPORT jint JNICALL fillBuffer(JNIEnv *env, jobject obj_this, jobject outputD
         goto out;
     }
 
+    GetAvailable(dataFile, &bytesLeft);
+    if (bytesLeft == 0) {
+        fseek(dataFile, 0, SEEK_SET);
+    }
 
     read = fread(outputBuffer, sizeof(char), size, dataFile);
     out:
