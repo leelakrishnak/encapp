@@ -200,8 +200,9 @@ class Transcoder {
             mMuxer = createMuxer(mCodec, oformat);
         }
 
-	    long prevTimeStamp = 0;
+	long prevTimeStamp = 0;
         long prevFrameCount = 0;
+
         while (true) {
             int index;
             if (mFramesAdded < totalFrames) { //Count not decoded frames but frames added to the output
@@ -260,12 +261,12 @@ class Transcoder {
                         }
                         numBytesDequeued += info.size;
                         ++outFramesCount;
-						long currentTimeStamp = System.currentTimeMillis();
+			long currentTimeStamp = System.currentTimeMillis();
                         if ((currentTimeStamp - prevTimeStamp) >= 1000) {
-							Log.d(TAG, "encoder fps: " + (outFramesCount - prevFrameCount));
-						    prevTimeStamp = currentTimeStamp;
+			    Log.d(TAG, "encoder fps: " + (outFramesCount - prevFrameCount));
+			    prevTimeStamp = currentTimeStamp;
                             prevFrameCount = outFramesCount;
-						}
+			}
                         mMuxer.writeSampleData(0, data, info);
                         mCodec.releaseOutputBuffer(index, false /* render */);
                     }
